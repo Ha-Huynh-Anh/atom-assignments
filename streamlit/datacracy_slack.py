@@ -12,7 +12,7 @@ from datetime import datetime as dt
 st.set_page_config(layout="wide")
 
 st.title('DataCracy ATOM Tiến Độ Lớp Học')
-with open('./env_variable.json','r') as j:
+with open('D:/Downloads/env_variable.json','r') as j:
     json_data = json.load(j)
 
 #SLACK_BEARER_TOKEN = os.environ.get('SLACK_BEARER_TOKEN') ## Get in setting of Streamlit Share
@@ -119,14 +119,12 @@ user_df = load_users_df()
 channel_df = load_channel_df()
 msg_df = load_msg_dict()
 
-#st.write(process_msg_data(msg_df, user_df, channel_df))
-
 
 # Input
 st.sidebar.markdown('## Thông tin')
 user_id = st.sidebar.text_input("Nhập Mã Số Người Dùng", 'U01xxxx')
 
-
+process_msg_data(msg_df, user_df, channel_df)
 valid_user_id = user_df['user_id'].str.contains(user_id).any()
 if valid_user_id:
     filter_user_df = user_df[user_df.user_id == user_id] ## dis = display =]]
