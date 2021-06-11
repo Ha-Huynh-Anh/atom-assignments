@@ -8,7 +8,8 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime as dt
-
+import seaborn as sns
+import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 st.title('DataCracy ATOM Tiến Độ Lớp Học')
@@ -41,6 +42,7 @@ def load_users_df():
     # Read dtc_group hosted in github
     dtc_groups = pd.read_csv(DTC_GROUPS_URL)
     user_df = user_df.merge(dtc_groups, how='left', on='name')
+    user_df = user_df.replace(np.nan,"khong_co_gi")
     return user_df
 
 @st.cache
@@ -108,7 +110,7 @@ def process_msg_data(msg_df, user_df, channel_df):
     msg_df = msg_df.merge(channel_df[['channel_id','channel_name','created_at']], how='left',on='channel_id')
     ## Format datetime cols
     msg_df['created_at'] = msg_df['created_at'].dt.strftime('%Y-%m-%d')
-    msg_df['msg_date'] = msg_df['msg_ts'].dt.strftime('%Y-%m-%d')
+    msg_df['msg_date'] = msg_df['msg_ts'].dt.strftime('%A')
     msg_df['msg_time'] = msg_df['msg_ts'].dt.strftime('%H:%M')
     msg_df['wordcount'] = msg_df.text.apply(lambda s: len(s.split()))
     return msg_df
@@ -119,77 +121,226 @@ user_df = load_users_df()
 channel_df = load_channel_df()
 msg_df = load_msg_dict()
 
-
-# Input
-st.sidebar.markdown('## Thông tin')
-user_id = st.sidebar.text_input("Nhập Mã Số Người Dùng", 'U01xxxx')
-
-process_msg_data(msg_df, user_df, channel_df)
-valid_user_id = user_df['user_id'].str.contains(user_id).any()
-if valid_user_id:
-    filter_user_df = user_df[user_df.user_id == user_id] ## dis = display =]]
-    filter_msg_df = msg_df[(msg_df.user_id == user_id) | (msg_df.reply_user1 == user_id) | (msg_df.reply_user2 == user_id)]
+# st.write(user_df)
+user_df_learner = user_df[user_df.DataCracy_role.str.startswith('Learner')]
+result_dict = {'Learner_id':[], 'submited_ass':[], '%_review':[],'gr_wordcount':[],'Ass1_created_at_time':[],'Ass1_created_at_date':[],'Ass2_created_at_time':[],'Ass2_created_at_date':[],'Ass3_created_at_time':[],'Ass3_created_at_date':[],'Ass4_created_at_time':[],'Ass4_created_at_date':[],'Ass5_created_at_time':[],'Ass5_created_at_date':[]}
+# st.write(user_df_learner[['user_id','DataCracy_role']])
+for i in user_df_learner['user_id']:
+# Learner_id
+    result_dict['Learner_id'].append(i)
+    process_msg_data(msg_df, user_df, channel_df)
+    filter_msg_df = msg_df[(msg_df.user_id == i) | (msg_df.reply_user1 == i) | (msg_df.reply_user2 == i)]
     p_msg_df = process_msg_data(filter_msg_df, user_df, channel_df)
 
-    ## Submission
     submit_df = p_msg_df[p_msg_df.channel_name.str.contains('assignment')]
     submit_df = submit_df[submit_df.DataCracy_role.str.contains('Learner')]
-    submit_df = submit_df[submit_df.user_id == user_id]
+    submit_df = submit_df[submit_df.user_id == i]
     latest_ts = submit_df.groupby(['channel_name', 'user_id']).msg_ts.idxmax() ## -> Latest ts
     submit_df = submit_df.loc[latest_ts]
-    dis_cols1 = ['channel_name', 'created_at','msg_date','msg_time','reply_user_count', 'reply1_name']
-    
-    # Review
-    review_df = p_msg_df[p_msg_df.user_id != user_id] ##-> Remove the case self-reply
-    review_df = review_df[review_df.channel_name.str.contains('assignment')]
-    review_df = review_df[review_df.DataCracy_role.str.contains('Learner')]
-    dis_cols2 = ['channel_name', 'created_at','msg_date','msg_time','reply_user_count','submit_name']
-    
-    ## Discussion
-    discuss_df = p_msg_df[p_msg_df.channel_name.str.contains('discuss')]
-    discuss_df = discuss_df.sort_values(['msg_date','msg_time'])
-    dis_cols3 = ['channel_name','msg_date', 'msg_time','wordcount','reply_user_count','reply1_name']
-    
-    st.markdown('Hello **{}**!'.format(list(filter_user_df['real_name'])[0]))
-    st.write(filter_user_df)
-    st.markdown('## Lịch sử Nộp Assignment')
-    st.write(submit_df[dis_cols1])
-    st.markdown('## Lịch sử Review Assignment')
-    st.write(review_df[dis_cols2])
-    st.markdown('## Lịch sử Discussion')
-    st.write(discuss_df[dis_cols3])
-
-    # Number cards on Sidebar
-    st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
-    <div class="card-body">
-    <h5 class="card-title">ĐÃ NỘP</h5>
-    <p class="card-text">{len(submit_df):02d}</p>
-    </div>
-    </div>''', unsafe_allow_html=True)
+# submitted_ass
+    result_dict['submited_ass'].append(len(submit_df))
 
     review_cnt = 100 * len(submit_df[submit_df.reply_user_count > 0])/len(submit_df) if len(submit_df) > 0  else 0
-    st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
-    <div class="card-body">
-    <h5 class="card-title">ĐƯỢC REVIEW</h5>
-    <p class="card-text">{review_cnt:.0f}%</p>
-    </div>
-    </div>''', unsafe_allow_html=True)
-
-    st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
-    <div class="card-body">
-    <h5 class="card-title">ĐÃ REVIEW</h5>
-    <p class="card-text">{len(review_df):02d}</p>
-    </div>
-    </div>''', unsafe_allow_html=True)
-
-    st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
-    <div class="card-body">
-    <h5 class="card-title">THẢO LUẬN</h5>
-    <p class="card-text">{sum(discuss_df['wordcount']):,d} chữ</p>
-    </div>
-    </div>''', unsafe_allow_html=True)
+# %_review
+    result_dict['%_review'].append(review_cnt)
+# Ass_created
+    if len(submit_df[submit_df['channel_name'] == 'atom-assignment1']) > 0:
+        time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment1']['msg_time'].iloc[0]
+        date_ts = submit_df[submit_df['channel_name'] == 'atom-assignment1']['msg_date'].iloc[0]
+        result_dict['Ass1_created_at_time'].append(time_ts)
+        result_dict['Ass1_created_at_date'].append(date_ts)
+    else:
+        result_dict['Ass1_created_at_time'].append(0)
+        result_dict['Ass1_created_at_date'].append(0)
     
-else:
-    st.markdown('Không tìm thấy Mã Số {}'.format(user_id))
+    if len(submit_df[submit_df['channel_name'] == 'atom-assignment2']) > 0:
+        time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment2']['msg_time'].iloc[0]
+        date_ts = submit_df[submit_df['channel_name'] == 'atom-assignment2']['msg_date'].iloc[0]
+        result_dict['Ass2_created_at_time'].append(time_ts)
+        result_dict['Ass2_created_at_date'].append(date_ts)
+    else:
+        result_dict['Ass2_created_at_time'].append(0)
+        result_dict['Ass2_created_at_date'].append(0)
+
+    if len(submit_df[submit_df['channel_name'] == 'atom-assignment3']) > 0:
+        time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment3']['msg_time'].iloc[0]
+        date_ts = submit_df[submit_df['channel_name'] == 'atom-assignment3']['msg_date'].iloc[0]
+        result_dict['Ass3_created_at_time'].append(time_ts)
+        result_dict['Ass3_created_at_date'].append(date_ts)
+    else:
+        result_dict['Ass3_created_at_time'].append(0)
+        result_dict['Ass3_created_at_date'].append(0)
+
+    if len(submit_df[submit_df['channel_name'] == 'atom-assignment4']) > 0:
+        time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment4']['msg_time'].iloc[0]
+        date_ts = submit_df[submit_df['channel_name'] == 'atom-assignment4']['msg_date'].iloc[0]
+        result_dict['Ass4_created_at_time'].append(time_ts)
+        result_dict['Ass4_created_at_date'].append(date_ts)
+    else:
+        result_dict['Ass4_created_at_time'].append(0)
+        result_dict['Ass4_created_at_date'].append(0)
+    
+    if len(submit_df[submit_df['channel_name'] == 'atom-assignment5']) > 0:
+        time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment5']['msg_time'].iloc[0]
+        date_ts = submit_df[submit_df['channel_name'] == 'atom-assignment5']['msg_date'].iloc[0]
+        result_dict['Ass5_created_at_time'].append(time_ts)
+        result_dict['Ass5_created_at_date'].append(date_ts)
+    else:
+        result_dict['Ass5_created_at_time'].append(0)
+        result_dict['Ass5_created_at_date'].append(0)
+# discussion   
+    discuss_df = p_msg_df[p_msg_df.channel_name.str.contains('discuss')]
+    result_dict['gr_wordcount'].append(sum(discuss_df['wordcount']))
+result_df = pd.DataFrame(result_dict)
+st.write(result_df)
+
+fig1, ax1= plt.subplots()
+df_1 = result_df['submited_ass']
+ax1.hist(df_1,bins = 30)
+st.markdown('## Phân phối số lượng assignment đã nộp')
+st.pyplot(fig1)
+
+fig1, ax1= plt.subplots()
+df_1 = result_df['%_review']
+ax1.hist(df_1,bins = 30)
+st.markdown('## Phân phối tỷ lệ bài được review')
+st.pyplot(fig1)
+
+fig1, ax1= plt.subplots()
+df_1 = result_df['gr_wordcount']
+ax1.hist(df_1,bins = 30)
+st.markdown('## Phân phối số wordcount được thảo luận')
+st.pyplot(fig1)
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass1_created_at_time']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 1')
+# st.pyplot(fig1)
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass1_created_at_date']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 1')
+# st.pyplot(fig1)    
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass2_created_at_time']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 2')
+# st.pyplot(fig1)  
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass2_created_at_date']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 2')
+# st.pyplot(fig1)  
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass3_created_at_time']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 3')
+# st.pyplot(fig1)  
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass3_created_at_date']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 3')
+# st.pyplot(fig1)
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass4_created_at_time']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 4')
+# st.pyplot(fig1)  
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass4_created_at_date']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 4')
+# st.pyplot(fig1)
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass5_created_at_time']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 5')
+# st.pyplot(fig1)  
+
+# fig1, ax1= plt.subplots()
+# df_1 = result_df['Ass5_created_at_date']
+# ax1.hist(df_1,bins = 30)
+# st.markdown('## Phân phối thời gian nộp bài 5')
+# st.pyplot(fig1)
+# Input
+# st.sidebar.markdown('## Thông tin')
+# user_id = st.sidebar.text_input("Nhập Mã Số Người Dùng", 'U01xxxx')
+
+# st.write(process_msg_data(msg_df, user_df, channel_df))
+# valid_user_id = user_df['user_id'].str.contains(user_id).any()
+# if valid_user_id:
+#     filter_user_df = user_df[user_df.user_id == user_id] ## dis = display =]]
+#     filter_msg_df = msg_df[(msg_df.user_id == user_id) | (msg_df.reply_user1 == user_id) | (msg_df.reply_user2 == user_id)]
+#     p_msg_df = process_msg_data(filter_msg_df, user_df, channel_df)
+
+#     ## Submission
+#     submit_df = p_msg_df[p_msg_df.channel_name.str.contains('assignment')]
+#     submit_df = submit_df[submit_df.DataCracy_role.str.contains('Learner')]
+#     submit_df = submit_df[submit_df.user_id == user_id]
+#     latest_ts = submit_df.groupby(['channel_name', 'user_id']).msg_ts.idxmax() ## -> Latest ts
+#     submit_df = submit_df.loc[latest_ts]
+#     dis_cols1 = ['channel_name', 'created_at','msg_date','msg_time','reply_user_count', 'reply1_name']
+    
+#     # Review
+#     review_df = p_msg_df[p_msg_df.user_id != user_id] ##-> Remove the case self-reply
+#     review_df = review_df[review_df.channel_name.str.contains('assignment')]
+#     review_df = review_df[review_df.DataCracy_role.str.contains('Learner')]
+#     dis_cols2 = ['channel_name', 'created_at','msg_date','msg_time','reply_user_count','submit_name']
+    
+#     ## Discussion
+#     discuss_df = p_msg_df[p_msg_df.channel_name.str.contains('discuss')]
+#     discuss_df = discuss_df.sort_values(['msg_date','msg_time'])
+#     dis_cols3 = ['channel_name','msg_date', 'msg_time','wordcount','reply_user_count','reply1_name']
+    
+#     st.markdown('Hello **{}**!'.format(list(filter_user_df['real_name'])[0]))
+#     st.write(filter_user_df)
+#     st.markdown('## Lịch sử Nộp Assignment')
+#     st.write(submit_df[dis_cols1])
+#     st.markdown('## Lịch sử Review Assignment')
+#     st.write(review_df[dis_cols2])
+#     st.markdown('## Lịch sử Discussion')
+#     st.write(discuss_df[dis_cols3])
+
+#     # Number cards on Sidebar
+#     st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
+#     <div class="card-body">
+#     <h5 class="card-title">ĐÃ NỘP</h5>
+#     <p class="card-text">{len(submit_df):02d}</p>
+#     </div>
+#     </div>''', unsafe_allow_html=True)
+
+#     review_cnt = 100 * len(submit_df[submit_df.reply_user_count > 0])/len(submit_df) if len(submit_df) > 0  else 0
+#     st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
+#     <div class="card-body">
+#     <h5 class="card-title">ĐƯỢC REVIEW</h5>
+#     <p class="card-text">{review_cnt:.0f}%</p>
+#     </div>
+#     </div>''', unsafe_allow_html=True)
+
+#     st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
+#     <div class="card-body">
+#     <h5 class="card-title">ĐÃ REVIEW</h5>
+#     <p class="card-text">{len(review_df):02d}</p>
+#     </div>
+#     </div>''', unsafe_allow_html=True)
+
+#     st.sidebar.markdown(f'''<div class="card text-info bg-info mb-3" style="width: 18rem">
+#     <div class="card-body">
+#     <h5 class="card-title">THẢO LUẬN</h5>
+#     <p class="card-text">{sum(discuss_df['wordcount']):,d} chữ</p>
+#     </div>
+#     </div>''', unsafe_allow_html=True)
+    
+# else:
+#     st.markdown('Không tìm thấy Mã Số {}'.format(user_id))
 
 ## Run: streamlit run streamlit/datacracy_slack.py
