@@ -111,7 +111,7 @@ def process_msg_data(msg_df, user_df, channel_df):
     ## Format datetime cols
     msg_df['created_at'] = msg_df['created_at'].dt.strftime('%Y-%m-%d')
     msg_df['msg_date'] = msg_df['msg_ts'].dt.strftime('%A')
-    msg_df['msg_time'] = msg_df['msg_ts'].dt.strftime('%H:%M')
+    msg_df['msg_time'] = msg_df['msg_ts'].dt.hour
     msg_df['wordcount'] = msg_df.text.apply(lambda s: len(s.split()))
     return msg_df
 
@@ -150,8 +150,8 @@ for i in user_df_learner['user_id']:
         result_dict['Ass1_created_at_time'].append(time_ts)
         result_dict['Ass1_created_at_date'].append(date_ts)
     else:
-        result_dict['Ass1_created_at_time'].append(0)
-        result_dict['Ass1_created_at_date'].append(0)
+        result_dict['Ass1_created_at_time'].append('NAN')
+        result_dict['Ass1_created_at_date'].append('NAN')
     
     if len(submit_df[submit_df['channel_name'] == 'atom-assignment2']) > 0:
         time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment2']['msg_time'].iloc[0]
@@ -159,8 +159,8 @@ for i in user_df_learner['user_id']:
         result_dict['Ass2_created_at_time'].append(time_ts)
         result_dict['Ass2_created_at_date'].append(date_ts)
     else:
-        result_dict['Ass2_created_at_time'].append(0)
-        result_dict['Ass2_created_at_date'].append(0)
+        result_dict['Ass2_created_at_time'].append('NAN')
+        result_dict['Ass2_created_at_date'].append('NAN')
 
     if len(submit_df[submit_df['channel_name'] == 'atom-assignment3']) > 0:
         time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment3']['msg_time'].iloc[0]
@@ -168,8 +168,8 @@ for i in user_df_learner['user_id']:
         result_dict['Ass3_created_at_time'].append(time_ts)
         result_dict['Ass3_created_at_date'].append(date_ts)
     else:
-        result_dict['Ass3_created_at_time'].append(0)
-        result_dict['Ass3_created_at_date'].append(0)
+        result_dict['Ass3_created_at_time'].append('NAN')
+        result_dict['Ass3_created_at_date'].append('NAN')
 
     if len(submit_df[submit_df['channel_name'] == 'atom-assignment4']) > 0:
         time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment4']['msg_time'].iloc[0]
@@ -177,8 +177,8 @@ for i in user_df_learner['user_id']:
         result_dict['Ass4_created_at_time'].append(time_ts)
         result_dict['Ass4_created_at_date'].append(date_ts)
     else:
-        result_dict['Ass4_created_at_time'].append(0)
-        result_dict['Ass4_created_at_date'].append(0)
+        result_dict['Ass4_created_at_time'].append('NAN')
+        result_dict['Ass4_created_at_date'].append('NAN')
     
     if len(submit_df[submit_df['channel_name'] == 'atom-assignment5']) > 0:
         time_ts = submit_df[submit_df['channel_name'] == 'atom-assignment5']['msg_time'].iloc[0]
@@ -186,91 +186,112 @@ for i in user_df_learner['user_id']:
         result_dict['Ass5_created_at_time'].append(time_ts)
         result_dict['Ass5_created_at_date'].append(date_ts)
     else:
-        result_dict['Ass5_created_at_time'].append(0)
-        result_dict['Ass5_created_at_date'].append(0)
+        result_dict['Ass5_created_at_time'].append('NAN')
+        result_dict['Ass5_created_at_date'].append('NAN')
 # discussion   
     discuss_df = p_msg_df[p_msg_df.channel_name.str.contains('discuss')]
     result_dict['gr_wordcount'].append(sum(discuss_df['wordcount']))
 result_df = pd.DataFrame(result_dict)
 st.write(result_df)
 
-fig1, ax1= plt.subplots()
-df_1 = result_df['submited_ass']
-ax1.hist(df_1,bins = 30)
-st.markdown('## Phân phối số lượng assignment đã nộp')
+fig1, axs = plt.subplots(1,3, figsize = (30,10))
+sns.distplot(a = result_df['gr_wordcount'], kde = False, color = "g", ax = axs[0])
+axs[0].set_title('Distribution of the number of discussion word-count')
+axs[0].set_ylabel('Number')
+axs[0].set_xlabel('The number of word-count')
+
+sns.distplot(a = result_df['%_review'], kde = False, color = "r", ax = axs[1] )
+axs[1].set_title('Distribution of the reviewed assignment')
+axs[1].set_ylabel('Percent')
+axs[1].set_xlabel('The reviewed assignment')
+
+sns.distplot(a = result_df['submited_ass'], kde = False, color = "y", ax = axs[2] )
+axs[2].set_title('Distribution of the submission assignment number')
+axs[2].set_ylabel('Number')
+axs[2].set_xlabel('Number of Assignments')
 st.pyplot(fig1)
 
-fig1, ax1= plt.subplots()
-df_1 = result_df['%_review']
-ax1.hist(df_1,bins = 30)
-st.markdown('## Phân phối tỷ lệ bài được review')
-st.pyplot(fig1)
+fig2, axs = plt.subplots(1,5, figsize = (30,10))
 
-fig1, ax1= plt.subplots()
-df_1 = result_df['gr_wordcount']
-ax1.hist(df_1,bins = 30)
-st.markdown('## Phân phối số wordcount được thảo luận')
-st.pyplot(fig1)
+sns.countplot(x = 'Ass1_created_at_time', data = result_df, color = "m", ax = axs[0])
+axs[0].set_title('Distribution of the submited time of assignment 1')
+axs[0].set_ylabel('Number')
+axs[0].set_xlabel('Submited time (h)')
+
+sns.countplot(x = 'Ass2_created_at_time', data = result_df, color = "m", ax = axs[1])
+axs[1].set_title('Distribution of the submited time of assignment 2')
+axs[1].set_ylabel('Number')
+axs[1].set_xlabel('Submited time (h)')
+
+sns.countplot(x = 'Ass3_created_at_time', data = result_df, color = "m", ax = axs[2])
+axs[2].set_title('Distribution of the submited time of assignment 3')
+axs[2].set_ylabel('Number')
+axs[2].set_xlabel('Submited time (h)')
+
+sns.countplot(x = 'Ass4_created_at_time', data = result_df, color = "m", ax = axs[3])
+axs[3].set_title('Distribution of the submited time of assignment 4')
+axs[3].set_ylabel('Number')
+axs[3].set_xlabel('Submited time (h)')
+
+sns.countplot(x = 'Ass5_created_at_time', data = result_df, color = "m", ax = axs[4])
+axs[4].set_title('Distribution of the submited time of assignment 5')
+axs[4].set_ylabel('Number')
+axs[4].set_xlabel('Submited time (h)')
+
+st.pyplot(fig2)
+
+fig3, axs = plt.subplots(1,5, figsize = (30,10))
+
+sns.countplot(x = 'Ass1_created_at_date', data = result_df, color = "m", ax = axs[0])
+axs[0].set_title('Distribution of the submited date of assignment 1')
+axs[0].set_ylabel('Number')
+axs[0].set_xlabel('Submited date')
+
+sns.countplot(x = 'Ass2_created_at_date', data = result_df, color = "m", ax = axs[1])
+axs[1].set_title('Distribution of the submited date of assignment 2')
+axs[1].set_ylabel('Number')
+axs[1].set_xlabel('Submited date')
+
+sns.countplot(x = 'Ass3_created_at_date', data = result_df, color = "m", ax = axs[2])
+axs[2].set_title('Distribution of the submited date of assignment 3')
+axs[2].set_ylabel('Number')
+axs[2].set_xlabel('Submited date')
+
+sns.countplot(x = 'Ass4_created_at_date', data = result_df, color = "m", ax = axs[3])
+axs[3].set_title('Distribution of the submited date of assignment 4')
+axs[3].set_ylabel('Number')
+axs[3].set_xlabel('Submited date')
+
+sns.countplot(x = 'Ass5_created_at_date', data = result_df, color = "m", ax = axs[4])
+axs[4].set_title('Distribution of the submited date of assignment 5')
+axs[4].set_ylabel('Number')
+axs[4].set_xlabel('Submited date')
+
+st.pyplot(fig3)
 
 # fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass1_created_at_time']
+# df_1 = result_df['submited_ass']
 # ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 1')
+# st.markdown('## Phân phối số lượng assignment đã nộp')
 # st.pyplot(fig1)
 
 # fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass1_created_at_date']
+# df_1 = result_df['%_review']
 # ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 1')
-# st.pyplot(fig1)    
-
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass2_created_at_time']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 2')
-# st.pyplot(fig1)  
-
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass2_created_at_date']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 2')
-# st.pyplot(fig1)  
-
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass3_created_at_time']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 3')
-# st.pyplot(fig1)  
-
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass3_created_at_date']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 3')
+# st.markdown('## Phân phối tỷ lệ bài được review')
 # st.pyplot(fig1)
 
 # fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass4_created_at_time']
+# df_1 = result_df['gr_wordcount']
 # ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 4')
-# st.pyplot(fig1)  
-
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass4_created_at_date']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 4')
+# st.markdown('## Phân phối số wordcount được thảo luận')
 # st.pyplot(fig1)
 
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass5_created_at_time']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 5')
-# st.pyplot(fig1)  
 
-# fig1, ax1= plt.subplots()
-# df_1 = result_df['Ass5_created_at_date']
-# ax1.hist(df_1,bins = 30)
-# st.markdown('## Phân phối thời gian nộp bài 5')
-# st.pyplot(fig1)
+
+
+
+
 # Input
 # st.sidebar.markdown('## Thông tin')
 # user_id = st.sidebar.text_input("Nhập Mã Số Người Dùng", 'U01xxxx')
