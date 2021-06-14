@@ -194,6 +194,9 @@ for i in user_df_learner['user_id']:
 result_df = pd.DataFrame(result_dict)
 st.write(result_df)
 
+
+
+#Ditribution of wordcount, reviewed assignment, number of submited assignment
 fig1, axs = plt.subplots(1,3, figsize = (30,10))
 sns.distplot(a = result_df['gr_wordcount'], kde = False, color = "g", ax = axs[0])
 axs[0].set_title('Distribution of the number of discussion word-count')
@@ -211,64 +214,129 @@ axs[2].set_ylabel('Number')
 axs[2].set_xlabel('Number of Assignments')
 st.pyplot(fig1)
 
-fig2, axs = plt.subplots(1,5, figsize = (30,10))
-
-sns.countplot(x = 'Ass1_created_at_time', data = result_df, color = "m", ax = axs[0])
-axs[0].set_title('Distribution of the submited time of assignment 1')
-axs[0].set_ylabel('Number')
-axs[0].set_xlabel('Submited time (h)')
-
-sns.countplot(x = 'Ass2_created_at_time', data = result_df, color = "m", ax = axs[1])
-axs[1].set_title('Distribution of the submited time of assignment 2')
-axs[1].set_ylabel('Number')
-axs[1].set_xlabel('Submited time (h)')
-
-sns.countplot(x = 'Ass3_created_at_time', data = result_df, color = "m", ax = axs[2])
-axs[2].set_title('Distribution of the submited time of assignment 3')
-axs[2].set_ylabel('Number')
-axs[2].set_xlabel('Submited time (h)')
-
-sns.countplot(x = 'Ass4_created_at_time', data = result_df, color = "m", ax = axs[3])
-axs[3].set_title('Distribution of the submited time of assignment 4')
-axs[3].set_ylabel('Number')
-axs[3].set_xlabel('Submited time (h)')
-
-sns.countplot(x = 'Ass5_created_at_time', data = result_df, color = "m", ax = axs[4])
-axs[4].set_title('Distribution of the submited time of assignment 5')
-axs[4].set_ylabel('Number')
-axs[4].set_xlabel('Submited time (h)')
-
-st.pyplot(fig2)
-
-fig3, axs = plt.subplots(1,5, figsize = (30,10))
+#Distribution of submitted date
+fig2, axs = plt.subplots(1,5, figsize = (40,5))
 
 sns.countplot(x = 'Ass1_created_at_date', data = result_df, color = "m", ax = axs[0])
-axs[0].set_title('Distribution of the submited date of assignment 1')
+axs[0].set_title('Distribution of the submitted date of assignment 1')
 axs[0].set_ylabel('Number')
-axs[0].set_xlabel('Submited date')
+axs[0].set_xlabel('Submitted date')
 
 sns.countplot(x = 'Ass2_created_at_date', data = result_df, color = "m", ax = axs[1])
-axs[1].set_title('Distribution of the submited date of assignment 2')
+axs[1].set_title('Distribution of the submitted date of assignment 2')
 axs[1].set_ylabel('Number')
-axs[1].set_xlabel('Submited date')
+axs[1].set_xlabel('Submitted date')
 
 sns.countplot(x = 'Ass3_created_at_date', data = result_df, color = "m", ax = axs[2])
-axs[2].set_title('Distribution of the submited date of assignment 3')
+axs[2].set_title('Distribution of the submitted date of assignment 3')
 axs[2].set_ylabel('Number')
-axs[2].set_xlabel('Submited date')
+axs[2].set_xlabel('Submitted date')
 
 sns.countplot(x = 'Ass4_created_at_date', data = result_df, color = "m", ax = axs[3])
-axs[3].set_title('Distribution of the submited date of assignment 4')
+axs[3].set_title('Distribution of the submitted date of assignment 4')
 axs[3].set_ylabel('Number')
-axs[3].set_xlabel('Submited date')
+axs[3].set_xlabel('Submitted date')
 
 sns.countplot(x = 'Ass5_created_at_date', data = result_df, color = "m", ax = axs[4])
-axs[4].set_title('Distribution of the submited date of assignment 5')
+axs[4].set_title('Distribution of the submitted date of assignment 5')
 axs[4].set_ylabel('Number')
-axs[4].set_xlabel('Submited date')
+axs[4].set_xlabel('Submitted date')
 
+st.pyplot(fig2)
+#######
+fig3, ax = plt.subplots(1,1, figsize = (8,5))
+for i in ['Ass1_created_at_date', 'Ass2_created_at_date', 'Ass3_created_at_date', 'Ass4_created_at_date', 'Ass5_created_at_date']:
+    mon_num = 0
+    tue_num = 0
+    wed_num = 0
+    thu_num = 0
+    fri_num = 0
+    sat_num = 0
+    sun_num = 0
+    nan_num = 0 
+    for z in result_df[i]:
+        if z == 'Monday': mon_num+=1
+        elif z == 'Tuesday': tue_num+=1
+        elif z == 'Wednesday': wed_num+=1
+        elif z == 'Thursday': thu_num+=1
+        elif z == 'Friday': fri_num+=1
+        elif z == 'Saturday':sat_num+=1
+        elif z == 'Sunday': sun_num+=1
+        elif z == "NAN": nan_num+=1 
+datetime_df = pd.DataFrame({'Date':['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday','Not submit'], 'Count_number': [mon_num,tue_num,wed_num,thu_num,fri_num,sat_num,sun_num,nan_num]})
+plt.title('Distribution of submitted date of week')
+sns.barplot(x='Date', y='Count_number', data = datetime_df, color = 'm')
 st.pyplot(fig3)
 
+#Distribution of submitted timeline
+sl_time = 0
+mo_time = 0
+af_time = 0
+ev_time = 0
+for i in result_df['Ass1_created_at_time']:
+    if i in range(22,24) or i in range(0,5): sl_time+=1
+    elif i in range(5,11): mo_time+=1
+    elif i in range(12,17): af_time+=1
+    elif i in range(18,22): ev_time+=1
+timeline_df_1 = pd.DataFrame({'timeline': ["(22pm - 4am)","(5am - 11am)","(12am - 17pm)", "(18pm - 21pm)"], 'Count_number':[sl_time, mo_time, af_time, ev_time]})
+
+sl_time = 0
+mo_time = 0
+af_time = 0
+ev_time = 0
+for i in result_df['Ass2_created_at_time']:
+    if i in range(22,24) or i in range(0,5): sl_time+=1
+    elif i in range(5,11): mo_time+=1
+    elif i in range(12,17): af_time+=1
+    elif i in range(18,22): ev_time+=1
+timeline_df_2 = pd.DataFrame({'timeline': ["(22pm - 4am)","(5am - 11am)","(12am - 17pm)", "(18pm - 21pm)"], 'Count_number':[sl_time, mo_time, af_time, ev_time]})
+
+sl_time = 0
+mo_time = 0
+af_time = 0
+ev_time = 0
+for i in result_df['Ass3_created_at_time']:
+    if i in range(22,24) or i in range(0,5): sl_time+=1
+    elif i in range(5,11): mo_time+=1
+    elif i in range(12,17): af_time+=1
+    elif i in range(18,22): ev_time+=1
+timeline_df_3 = pd.DataFrame({'timeline': ["(22pm - 4am)","(5am - 11am)","(12am - 17pm)", "(18pm - 21pm)"], 'Count_number':[sl_time, mo_time, af_time, ev_time]})
+
+sl_time = 0
+mo_time = 0
+af_time = 0
+ev_time = 0
+for i in result_df['Ass4_created_at_time']:
+    if i in range(22,24) or i in range(0,5): sl_time+=1
+    elif i in range(5,11): mo_time+=1
+    elif i in range(12,17): af_time+=1
+    elif i in range(18,22): ev_time+=1
+timeline_df_4 = pd.DataFrame({'timeline': ["(22pm - 4am)","(5am - 11am)","(12am - 17pm)", "(18pm - 21pm)"], 'Count_number':[sl_time, mo_time, af_time, ev_time]})
+
+sl_time = 0
+mo_time = 0
+af_time = 0
+ev_time = 0
+for i in result_df['Ass5_created_at_time']:
+    if i in range(22,24) or i in range(0,5): sl_time+=1
+    elif i in range(5,11): mo_time+=1
+    elif i in range(12,17): af_time+=1
+    elif i in range(18,22): ev_time+=1
+timeline_df_5 = pd.DataFrame({'timeline': ["(22pm - 4am)","(5am - 11am)","(12am - 17pm)", "(18pm - 21pm)"], 'Count_number':[sl_time, mo_time, af_time, ev_time]})
+
+fig4, axs = plt.subplots(1,5, figsize = (30,5))
+fig4.suptitle("Distribution of submitted timeline")
+sns.barplot(x = 'timeline', y = 'Count_number', data = timeline_df_1, ax = axs[0])
+axs[0].title.set_text('Assignment 1')
+sns.barplot(x = 'timeline', y = 'Count_number', data = timeline_df_2, ax = axs[1])
+axs[1].title.set_text('Assignment 2')
+sns.barplot(x = 'timeline', y = 'Count_number', data = timeline_df_3, ax = axs[2])
+axs[2].title.set_text('Assignment 3')
+sns.barplot(x = 'timeline', y = 'Count_number', data = timeline_df_4, ax = axs[3])
+axs[3].title.set_text('Assignment 4')
+sns.barplot(x = 'timeline', y = 'Count_number', data = timeline_df_5, ax = axs[4])
+axs[4].title.set_text('Assignment 5')
+st.pyplot(fig4)
 # fig1, ax1= plt.subplots()
 # df_1 = result_df['submited_ass']
 # ax1.hist(df_1,bins = 30)
